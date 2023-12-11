@@ -1,7 +1,7 @@
 import com.linecorp.armeria.common.SessionProtocol
 import com.linecorp.armeria.server.Server
 import com.linecorp.armeria.server.logging.AccessLogWriter
-import sttp.model.StatusCode
+import sttp.model.{HeaderNames, StatusCode}
 import sttp.tapir._
 import sttp.tapir.server.armeria.zio.ArmeriaZioServerInterpreter
 import sttp.tapir.ztapir.RichZEndpoint
@@ -14,15 +14,39 @@ object TapirApp extends ZIOAppDefault {
 
   final case class AuthInputData(secret: Option[String], clientIp: Option[String])
 
+  val ip = extractFromRequest(request =>
+    request
+      .header(HeaderNames.XForwardedFor)
+      .flatMap { h =>
+        println("1: " + h)
+        h.split(",").headOption
+      }
+      .orElse{
+        val r = request.header("Remote-Address")
+        println("2: " + r.toString)
+        r
+      }
+      .orElse{
+        val r = request.header("X-Real-Ip")
+        println("3: " + r.toString)
+        r
+      }
+      .orElse{
+        val r = request.connectionInfo.remote.flatMap(a => Option(a.getAddress.getHostAddress))
+        println("4:" + r.toString)
+        r
+      }
+  )
+
   val secureEndpoint =
     endpoint
       .securityIn(cookie[Option[String]]("secret_cookie"))
-      .securityIn(clientIp)
+      .securityIn(ip)
       .mapSecurityInTo[AuthInputData]
       .errorOut(statusCode(StatusCode.Unauthorized).and(stringBody("UTF-8")))
       .zServerSecurityLogic(in => ZIO.log(s"Input: $in").as(in))
 
-  val hellocurl =
+  val hello =
     secureEndpoint
       .in("hello" / "here" / path[String]("some_id"))
       .out(stringBody("UTF-8"))
