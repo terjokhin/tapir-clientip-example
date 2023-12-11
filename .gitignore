@@ -1,5 +1,32 @@
+# Operating System Files
+
+*.DS_Store
+Thumbs.db
+
+# Build files
+
 *.class
 *.log
+logs
+target
+/.classpath
+/project/project
+/project/target
+/.settings
+/.project
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+# VSCode
+.metals
+.vscode
+.history
+metals.sbt
+
+# IntelliJ IDEA Files
+
+/.idea*
+/.idea_modules
+*.iml
+
+# SBT
+.bsp
+.bloop
